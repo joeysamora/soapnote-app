@@ -16,6 +16,7 @@ interface NoteData {
   title: string;
   clientId: string;
   sessionDate: string;
+  sessionTime: string;
   sessionType: string;
   modality: string;
   chips: Record<string, string[]>;
@@ -69,19 +70,25 @@ const SECTION_COLORS = {
 const SESSION_TYPES = ["Individual (50 min)","Individual (90 min)","Couples therapy","Family therapy","Group therapy","Intake / Assessment","Crisis session","Telehealth"];
 const MODALITIES = ["CBT","DBT","Psychodynamic","ACT","EMDR","Person-centered","Trauma-focused CBT","Motivational Interviewing","Solution-focused","Eclectic / Integrative"];
 
-const DEFAULT_NOTE = (): Omit<NoteData, "id" | "savedAt"> => ({
-  title: "",
-  clientId: "",
-  sessionDate: new Date().toISOString().split("T")[0],
-  sessionType: "",
-  modality: "",
-  chips: {},
-  ratings: { insight: 0, impulse: 0, judgment: 0, global: 0 },
-  subjectiveText: "",
-  objectiveText: "",
-  assessmentText: "",
-  planText: "",
-});
+const DEFAULT_NOTE = (): Omit<NoteData, "id" | "savedAt"> => {
+  const now = new Date();
+  const localDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  const localTime = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+  return {
+    title: "",
+    clientId: "",
+    sessionDate: localDate,
+    sessionTime: localTime,
+    sessionType: "",
+    modality: "",
+    chips: {},
+    ratings: { insight: 0, impulse: 0, judgment: 0, global: 0 },
+    subjectiveText: "",
+    objectiveText: "",
+    assessmentText: "",
+    planText: "",
+  };
+};
 
 const DEFAULT_SETTINGS: Settings = {
   clinicianName: "",
@@ -106,9 +113,20 @@ function persistSettings(s: Settings) { localStorage.setItem("soap_settings", JS
 
 function fmtDate(d: string, long = false) {
   if (!d) return "—";
-  return new Date(d + "T00:00:00").toLocaleDateString("en-US", long
+  // Parse as local date (YYYY-MM-DD) to avoid timezone shift
+  const [year, month, day] = d.split("-").map(Number);
+  const date = new Date(year, month - 1, day);
+  return date.toLocaleDateString("en-US", long
     ? { weekday: "long", year: "numeric", month: "long", day: "numeric" }
     : { month: "short", day: "numeric", year: "numeric" });
+}
+
+function fmtTime(t: string) {
+  if (!t) return "";
+  const [h, m] = t.split(":").map(Number);
+  const ampm = h >= 12 ? "PM" : "AM";
+  const hour = h % 12 || 12;
+  return `${hour}:${String(m).padStart(2, "0")} ${ampm}`;
 }
 
 // ─── Sentence-form prose builders ────────────────────────────────────────────
@@ -128,6 +146,7 @@ function buildProseNote(note: Omit<NoteData, "id" | "savedAt">): {
 } {
   const c = (g: string) => (note.chips[g] || []);
 
+  // ── S ──────────────────────────────────────────────────────────────────────
   const sParts: string[] = [];
   if (c("mood").length) {
     const moodStr = joinList(c("mood").map(m => m.toLowerCase()));
@@ -139,41 +158,55 @@ function buildProseNote(note: Omit<NoteData, "id" | "savedAt">): {
   }
   if (note.subjectiveText) sParts.push(note.subjectiveText.trim());
 
+  // ── O ──────────────────────────────────────────────────────────────────────
   const oParts: string[] = [];
   const affectChips = c("affect");
   const behaviorChips = c("behavior");
   const speechChips = c("speech");
 
   if (affectChips.length && behaviorChips.length) {
-    oParts.push(`Client presented as ${joinList(behaviorChips.map(v => v.toLowerCase()))} with ${joinList(affectChips.map(v => v.toLowerCase()))} affect.`);
+    oParts.push(
+      `Client presented as ${joinList(behaviorChips.map(v => v.toLowerCase()))} with ${joinList(affectChips.map(v => v.toLowerCase()))} affect.`
+    );
   } else if (affectChips.length) {
     oParts.push(`Client's affect was ${joinList(affectChips.map(v => v.toLowerCase()))}.`);
   } else if (behaviorChips.length) {
     oParts.push(`Client presented as ${joinList(behaviorChips.map(v => v.toLowerCase()))}.`);
   }
+
   if (speechChips.length) {
     oParts.push(`Speech and thought process were ${joinList(speechChips.map(v => v.toLowerCase()))}.`);
   }
+
   const ratedItems = RATING_LABELS.filter(r => note.ratings[r.key] > 0);
   if (ratedItems.length) {
-    const ratingStr = ratedItems.map(r => `${r.label.toLowerCase()} was rated ${note.ratings[r.key]}/5`).join("; ");
-    oParts.push(`${ratingStr.charAt(0).toUpperCase() + ratingStr.slice(1)}.`);
+    const ratingStr = ratedItems
+      .map(r => `${r.label.toLowerCase()} was rated ${note.ratings[r.key]}/5`)
+      .join("; ");
+    const cap = ratingStr.charAt(0).toUpperCase() + ratingStr.slice(1);
+    oParts.push(`${cap}.`);
   }
+
   if (note.objectiveText) oParts.push(note.objectiveText.trim());
 
+  // ── A ──────────────────────────────────────────────────────────────────────
   const aParts: string[] = [];
   if (c("progress").length) {
-    aParts.push(`The client is ${joinList(c("progress").map(v => v.toLowerCase()))} toward treatment goals.`);
+    const prog = joinList(c("progress").map(v => v.toLowerCase()));
+    aParts.push(`The client is ${prog} toward treatment goals.`);
   }
   if (c("diagnosis").length) {
-    aParts.push(`Presentation remains consistent with a diagnosis of ${joinList(c("diagnosis"))}.`);
+    const dx = joinList(c("diagnosis"));
+    aParts.push(`Presentation remains consistent with a diagnosis of ${dx}.`);
   }
+
   const riskChips = c("risk");
   if (riskChips.length) {
     const noRisk = riskChips.includes("No current SI/HI") || riskChips.includes("Denied SI/HI");
     const hasSI = riskChips.some(r => r.toLowerCase().includes("si"));
     const hasHI = riskChips.some(r => r.toLowerCase().includes("hi"));
     const safetyPlan = riskChips.includes("Safety plan reviewed") || riskChips.includes("Contract for safety");
+
     if (noRisk && !hasSI && !hasHI) {
       aParts.push("Client denied any suicidal or homicidal ideation at this time.");
     } else {
@@ -182,11 +215,14 @@ function buildProseNote(note: Omit<NoteData, "id" | "savedAt">): {
     }
     if (safetyPlan) aParts.push("Safety plan was reviewed and updated with the client.");
   }
+
   if (note.assessmentText) aParts.push(note.assessmentText.trim());
 
+  // ── P ──────────────────────────────────────────────────────────────────────
   const pParts: string[] = [];
   if (c("interventions").length) {
-    pParts.push(`This session included ${joinList(c("interventions").map(v => v.toLowerCase()))}.`);
+    const intStr = joinList(c("interventions").map(v => v.toLowerCase()));
+    pParts.push(`This session included ${intStr}.`);
   }
   if (c("followup").length) {
     const fu = c("followup");
@@ -212,7 +248,7 @@ function buildPlainText(note: Omit<NoteData, "id" | "savedAt">, settings: Settin
   if (settings.clinicianName) t += `Clinician: ${settings.clinicianName}${settings.credentials ? ", " + settings.credentials : ""}\n`;
   if (settings.practice) t += `Practice: ${settings.practice}\n`;
   t += `Client: ${note.clientId || "[Not specified]"}\n`;
-  t += `Date: ${fmtDate(note.sessionDate, true)}\n`;
+  t += `Date: ${fmtDate(note.sessionDate, true)}${note.sessionTime ? " at " + fmtTime(note.sessionTime) : ""}\n`;
   if (note.sessionType) t += `Session: ${note.sessionType}\n`;
   if (note.modality) t += `Modality: ${note.modality}\n`;
   t += `\nSUBJECTIVE\n${line}\n${prose.subjective}\n`;
@@ -226,24 +262,28 @@ function buildRichHTML(note: Omit<NoteData, "id" | "savedAt">, settings: Setting
   const prose = buildProseNote(note);
   const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   const nl2br = (s: string) => esc(s).replace(/\n/g, "<br>");
+
   const P = (text: string) =>
     text ? `<p style="margin:6pt 0;font-size:10.5pt;line-height:1.7;font-family:Arial,sans-serif;">${nl2br(text)}</p>` : "";
+
   const SectionHeading = (letter: string, title: string, color: string) =>
     `<h2 style="font-size:13pt;color:${color};margin:16pt 0 4pt;border-bottom:1pt solid ${color};padding-bottom:3pt;font-family:Arial,sans-serif;">${letter} — ${title}</h2>`;
 
   let h = `<h1 style="font-size:18pt;margin:0 0 8pt;font-family:Georgia,serif;">SOAP Note</h1>`;
   h += `<table style="border-collapse:collapse;width:100%;margin-bottom:12pt;font-size:10pt;font-family:Arial,sans-serif;">`;
   h += `<tr><td style="padding:3pt 8pt 3pt 0;width:50%;"><b>Client:</b>&nbsp;${esc(note.clientId || "[Not specified]")}</td>`;
-  h += `<td style="padding:3pt 0;"><b>Date:</b>&nbsp;${esc(fmtDate(note.sessionDate, true))}</td></tr>`;
+  h += `<td style="padding:3pt 0;"><b>Date:</b>&nbsp;${esc(fmtDate(note.sessionDate, true))}${note.sessionTime ? " at " + esc(fmtTime(note.sessionTime)) : ""}</td></tr>`;
   h += `<tr><td style="padding:3pt 8pt 3pt 0;"><b>Session:</b>&nbsp;${esc(note.sessionType || "—")}</td>`;
   h += `<td style="padding:3pt 0;"><b>Modality:</b>&nbsp;${esc(note.modality || "—")}</td></tr>`;
   if (settings.clinicianName) h += `<tr><td colspan="2" style="padding:3pt 0;"><b>Clinician:</b>&nbsp;${esc(settings.clinicianName + (settings.credentials ? ", " + settings.credentials : ""))}</td></tr>`;
   if (settings.practice) h += `<tr><td colspan="2" style="padding:3pt 0;"><b>Practice:</b>&nbsp;${esc(settings.practice)}</td></tr>`;
   h += `</table><hr style="border:none;border-top:1pt solid #bbb;margin-bottom:12pt;">`;
+
   h += SectionHeading("S", "Subjective", SECTION_COLORS.S) + P(prose.subjective);
   h += SectionHeading("O", "Objective", SECTION_COLORS.O) + P(prose.objective);
   h += SectionHeading("A", "Assessment", SECTION_COLORS.A) + P(prose.assessment);
   h += SectionHeading("P", "Plan", SECTION_COLORS.P) + P(prose.plan);
+
   h += `<hr style="border:none;border-top:1pt solid #ccc;margin-top:16pt;"><p style="font-size:8pt;color:#888;font-family:Arial,sans-serif;">Generated by SOAPnote · ${new Date().toLocaleDateString()}</p>`;
   return h;
 }
@@ -441,7 +481,6 @@ function PreviewModal({ note, settings, onClose, onCopy, onPrint }: {
   onCopy: () => void;
   onPrint: () => void;
 }) {
-  const dateStr = fmtDate(note.sessionDate, true);
   const prose = buildProseNote(note);
 
   const SectionPreview = ({ letter, title, color, text }: {
@@ -467,8 +506,9 @@ function PreviewModal({ note, settings, onClose, onCopy, onPrint }: {
           <button onClick={onClose} style={{ width: 28, height: 28, borderRadius: "50%", border: "none", background: "#f7f9f8", cursor: "pointer", fontSize: 16, color: "#8a9491", display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
         </div>
         <div style={{ padding: "1.5rem", overflowY: "auto", flex: 1 }}>
+          {/* Meta */}
           <div style={{ background: "#f7f9f8", borderRadius: 6, padding: "12px 14px", marginBottom: "1.5rem", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
-            {[["Client", note.clientId || "—"], ["Date", dateStr], ["Session", note.sessionType || "—"], ["Modality", note.modality || "—"], ...(settings.clinicianName ? [["Clinician", settings.clinicianName + (settings.credentials ? `, ${settings.credentials}` : "")]] : []), ...(settings.practice ? [["Practice", settings.practice]] : [])].map(([k, v]) => (
+            {[["Client", note.clientId || "—"], ["Date", fmtDate(note.sessionDate, true)], ["Time", note.sessionTime ? fmtTime(note.sessionTime) : "—"], ["Session", note.sessionType || "—"], ["Modality", note.modality || "—"], ...(settings.clinicianName ? [["Clinician", settings.clinicianName + (settings.credentials ? `, ${settings.credentials}` : "")]] : []), ...(settings.practice ? [["Practice", settings.practice]] : [])].map(([k, v]) => (
               <div key={k} style={{ fontSize: 12, color: "#4a5550" }}><strong style={{ color: "#1a1f1d", fontWeight: 500 }}>{k}:</strong> {v}</div>
             ))}
           </div>
@@ -520,6 +560,7 @@ export default function App() {
     setTimeout(() => setToast(""), 2400);
   }, []);
 
+  // Autosave
   useEffect(() => {
     if (!settings.autosave) return;
     if (autosaveTimer.current) clearTimeout(autosaveTimer.current);
@@ -529,6 +570,7 @@ export default function App() {
     }, 800);
   }, [note, settings.autosave]);
 
+  // Completion score
   const completion = (() => {
     let s = 0;
     if (note.clientId) s++;
@@ -544,6 +586,7 @@ export default function App() {
     return Math.round((s / 10) * 100);
   })();
 
+  // Section statuses
   const sectionStatus = (id: "s" | "o" | "a" | "p"): "empty" | "partial" | "done" => {
     const c = (g: string) => (note.chips[g] || []).length;
     let score = 0;
@@ -591,7 +634,7 @@ export default function App() {
     if (!n) return;
     setCurrentNoteId(id);
     const { id: _id, savedAt, ...rest } = n;
-    setNote(rest);
+    setNote({ sessionTime: "", ...rest });
     setSavedStatus(`Saved · ${new Date(n.savedAt).toLocaleDateString()}`);
     setPage("editor");
   };
@@ -654,6 +697,7 @@ export default function App() {
     showToast("All records cleared");
   };
 
+  // ── Styles ──────────────────────────────────────────────────────────────────
   const s = {
     app: { fontFamily: "'DM Sans', 'Helvetica Neue', Arial, sans-serif", background: "#f7f9f8", color: "#1a1f1d", minHeight: "100vh", fontSize: 14, lineHeight: 1.6 } as React.CSSProperties,
     topbar: { position: "sticky" as const, top: 0, zIndex: 100, background: "rgba(247,249,248,0.92)", backdropFilter: "blur(12px)", borderBottom: "1px solid #dde4e1", padding: "0 2rem", height: 60, display: "flex", alignItems: "center", justifyContent: "space-between" },
@@ -667,6 +711,7 @@ export default function App() {
       <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500&display=swap'); * { box-sizing: border-box; margin: 0; padding: 0; } body { margin: 0; }`}</style>
 
       <div style={s.app}>
+        {/* TOP BAR */}
         <div style={s.topbar}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <div style={{ width: 34, height: 34, background: "#3d6b5e", borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -693,6 +738,7 @@ export default function App() {
         </div>
 
         <div style={s.layout}>
+          {/* SIDEBAR */}
           <div style={s.sidebar}>
             <div style={{ padding: "0 1rem 1.5rem" }}>
               <button onClick={newNote} style={{ width: "100%", padding: 9, background: "#3d6b5e", color: "white", border: "none", borderRadius: 6, fontSize: 13, fontFamily: "inherit", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, fontWeight: 500, marginBottom: "1rem" }}>
@@ -716,8 +762,10 @@ export default function App() {
             </div>
           </div>
 
+          {/* MAIN */}
           <div style={s.main}>
 
+            {/* ── EDITOR ── */}
             {page === "editor" && (
               <div>
                 <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "1.75rem", gap: "1rem" }}>
@@ -737,20 +785,26 @@ export default function App() {
                   </div>
                 </div>
 
+                {/* Completion bar */}
                 {settings.showCompletion && (
                   <div style={{ height: 3, background: "#eef1f0", borderRadius: 2, marginBottom: "1.75rem", overflow: "hidden" }}>
                     <div style={{ height: "100%", background: "#3d6b5e", borderRadius: 2, width: `${completion}%`, transition: "width 0.4s ease" }} />
                   </div>
                 )}
 
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 12, marginBottom: "1.75rem", padding: "1.25rem", background: "white", border: "1px solid #dde4e1", borderRadius: 10 }}>
+                {/* Meta grid */}
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: 12, marginBottom: "1.75rem", padding: "1.25rem", background: "white", border: "1px solid #dde4e1", borderRadius: 10 }}>
                   <MetaInput label="Client ID" value={note.clientId} onChange={v => setNote(p => ({ ...p, clientId: v }))} placeholder="e.g. J. Smith" />
                   <MetaInput label="Session date" value={note.sessionDate} onChange={v => setNote(p => ({ ...p, sessionDate: v }))} type="date" />
+                  <MetaInput label="Session time" value={note.sessionTime} onChange={v => setNote(p => ({ ...p, sessionTime: v }))} type="time" />
                   <MetaSelect label="Session type" value={note.sessionType} onChange={v => setNote(p => ({ ...p, sessionType: v }))} options={SESSION_TYPES} />
                   <MetaSelect label="Modality" value={note.modality} onChange={v => setNote(p => ({ ...p, modality: v }))} options={MODALITIES} />
                 </div>
 
+                {/* SOAP sections */}
                 <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+
+                  {/* S */}
                   <SectionCard letter="S" title="Subjective" desc="Client's self-report, presenting concerns & mood" color={SECTION_COLORS.S} expanded={expandedSections.s} onToggle={() => setExpandedSections(p => ({ ...p, s: !p.s }))} status={sectionStatus("s")}>
                     <FieldGroup label="Presenting mood">
                       <ChipGroup group="mood" selected={note.chips.mood || []} onToggle={toggleChip} />
@@ -763,6 +817,7 @@ export default function App() {
                     </FieldGroup>
                   </SectionCard>
 
+                  {/* O */}
                   <SectionCard letter="O" title="Objective" desc="Clinician's observations — affect, behavior, mental status" color={SECTION_COLORS.O} expanded={expandedSections.o} onToggle={() => setExpandedSections(p => ({ ...p, o: !p.o }))} status={sectionStatus("o")}>
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginTop: 16 }}>
                       <div>
@@ -788,6 +843,7 @@ export default function App() {
                     </FieldGroup>
                   </SectionCard>
 
+                  {/* A */}
                   <SectionCard letter="A" title="Assessment" desc="Clinical formulation, diagnosis status, risk level" color={SECTION_COLORS.A} expanded={expandedSections.a} onToggle={() => setExpandedSections(p => ({ ...p, a: !p.a }))} status={sectionStatus("a")}>
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginTop: 16 }}>
                       <div>
@@ -807,6 +863,7 @@ export default function App() {
                     </FieldGroup>
                   </SectionCard>
 
+                  {/* P */}
                   <SectionCard letter="P" title="Plan" desc="Interventions used, next steps, homework" color={SECTION_COLORS.P} expanded={expandedSections.p} onToggle={() => setExpandedSections(p => ({ ...p, p: !p.p }))} status={sectionStatus("p")}>
                     <FieldGroup label="Interventions used this session">
                       <ChipGroup group="interventions" selected={note.chips.interventions || []} onToggle={toggleChip} />
@@ -829,6 +886,7 @@ export default function App() {
               </div>
             )}
 
+            {/* ── RECORDS ── */}
             {page === "records" && (
               <div>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1.5rem" }}>
@@ -870,9 +928,11 @@ export default function App() {
               </div>
             )}
 
+            {/* ── SETTINGS ── */}
             {page === "settings" && (
               <div>
                 <h2 style={{ fontFamily: "DM Serif Display, Georgia, serif", fontSize: 26, letterSpacing: "-0.02em", marginBottom: "1.5rem" }}>Settings</h2>
+
                 {[
                   {
                     title: "Clinician info",
@@ -917,6 +977,7 @@ export default function App() {
         </div>
       </div>
 
+      {/* Preview modal */}
       {showPreview && (
         <PreviewModal
           note={note}
