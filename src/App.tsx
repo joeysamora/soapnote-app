@@ -472,6 +472,54 @@ function MetaInput({ label, value, onChange, placeholder, type = "text" }: { lab
   );
 }
 
+function TimePicker({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+  const parseTime = (v: string) => {
+    if (!v) return { hour: "12", minute: "00", ampm: "AM" };
+    const [h, m] = v.split(":").map(Number);
+    const ampm = h >= 12 ? "PM" : "AM";
+    const hour = String(h % 12 || 12);
+    return { hour, minute: String(m).padStart(2, "0"), ampm };
+  };
+  const { hour, minute, ampm } = parseTime(value);
+  const update = (h: string, m: string, ap: string) => {
+    let h24 = parseInt(h) % 12;
+    if (ap === "PM") h24 += 12;
+    onChange(`${String(h24).padStart(2, "0")}:${m}`);
+  };
+  const selectStyle: React.CSSProperties = {
+    padding: "7px 4px", border: "1px solid #dde4e1", borderRadius: 6,
+    fontSize: 13, fontFamily: "inherit", color: "#1a1f1d",
+    background: "#f7f9f8", outline: "none", cursor: "pointer",
+    appearance: "none", textAlign: "center", flex: 1,
+  };
+  const hours = Array.from({ length: 12 }, (_, i) => String(i + 1));
+  const minutes = ["00","05","10","15","20","25","30","35","40","45","50","55"];
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+      <label style={{ fontSize: 10, fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.07em", color: "#8a9491" }}>{label}</label>
+      <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+        <select value={hour} onChange={e => update(e.target.value, minute, ampm)} style={selectStyle}
+          onFocus={e => { e.target.style.borderColor = "#3d6b5e"; e.target.style.background = "white"; }}
+          onBlur={e => { e.target.style.borderColor = "#dde4e1"; e.target.style.background = "#f7f9f8"; }}>
+          {hours.map(h => <option key={h} value={h}>{h}</option>)}
+        </select>
+        <span style={{ color: "#8a9491", fontWeight: 500, flexShrink: 0 }}>:</span>
+        <select value={minute} onChange={e => update(hour, e.target.value, ampm)} style={selectStyle}
+          onFocus={e => { e.target.style.borderColor = "#3d6b5e"; e.target.style.background = "white"; }}
+          onBlur={e => { e.target.style.borderColor = "#dde4e1"; e.target.style.background = "#f7f9f8"; }}>
+          {minutes.map(m => <option key={m} value={m}>{m}</option>)}
+        </select>
+        <select value={ampm} onChange={e => update(hour, minute, e.target.value)} style={selectStyle}
+          onFocus={e => { e.target.style.borderColor = "#3d6b5e"; e.target.style.background = "white"; }}
+          onBlur={e => { e.target.style.borderColor = "#dde4e1"; e.target.style.background = "#f7f9f8"; }}>
+          <option value="AM">AM</option>
+          <option value="PM">PM</option>
+        </select>
+      </div>
+    </div>
+  );
+}
+
 // ─── Preview Modal ────────────────────────────────────────────────────────────
 
 function PreviewModal({ note, settings, onClose, onCopy, onPrint }: {
@@ -796,7 +844,7 @@ export default function App() {
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: 12, marginBottom: "1.75rem", padding: "1.25rem", background: "white", border: "1px solid #dde4e1", borderRadius: 10 }}>
                   <MetaInput label="Client ID" value={note.clientId} onChange={v => setNote(p => ({ ...p, clientId: v }))} placeholder="e.g. J. Smith" />
                   <MetaInput label="Session date" value={note.sessionDate} onChange={v => setNote(p => ({ ...p, sessionDate: v }))} type="date" />
-                  <MetaInput label="Session time" value={note.sessionTime} onChange={v => setNote(p => ({ ...p, sessionTime: v }))} type="time" />
+                  <TimePicker label="Session time" value={note.sessionTime} onChange={v => setNote(p => ({ ...p, sessionTime: v }))} />
                   <MetaSelect label="Session type" value={note.sessionType} onChange={v => setNote(p => ({ ...p, sessionType: v }))} options={SESSION_TYPES} />
                   <MetaSelect label="Modality" value={note.modality} onChange={v => setNote(p => ({ ...p, modality: v }))} options={MODALITIES} />
                 </div>
