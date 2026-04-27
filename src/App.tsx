@@ -682,7 +682,7 @@ export default function App() {
     if (!n) return;
     setCurrentNoteId(id);
     const { id: _id, savedAt, ...rest } = n;
-    setNote({ sessionTime: "", ...rest });
+    setNote({ ...rest, sessionTime: rest.sessionTime || "" });
     setSavedStatus(`Saved · ${new Date(n.savedAt).toLocaleDateString()}`);
     setPage("editor");
   };
