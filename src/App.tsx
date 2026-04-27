@@ -54,7 +54,22 @@ const CHIP_GROUPS = {
   progress: ["Progressing well","Minimal progress","Regression noted","Goals met","Plateaued","New goals identified","Treatment resistant"],
   risk: ["No current SI/HI","Passive SI present","Active SI — no plan","SI with plan","HI present","Safety plan reviewed","Denied SI/HI","Contract for safety"],
   diagnosis: ["MDD","GAD","PTSD","Panic disorder","OCD","Bipolar I","Bipolar II","BPD","ADHD","ASD","Substance use disorder","Adjustment disorder","R/O — further eval"],
-  interventions: ["Psychoeducation","Cognitive restructuring","Behavioral activation","Exposure","Mindfulness","Grounding techniques","Somatic work","EMDR processing","DBT skills","Narrative therapy","Crisis intervention","Motivational interviewing","Relaxation training","Grief work","Family systems work","Safety planning","Role play / modeling","Chair work"],
+  interventions: [
+    // ── Relational / foundational
+    "Active listening","Building rapport","Empathic reflection","Paraphrasing","Validation","Unconditional positive regard","Therapeutic alliance building","Open-ended questioning","Summarizing","Clarification",
+    // ── Cognitive & behavioral
+    "Psychoeducation","Cognitive restructuring","Thought challenging","Behavioral activation","Exposure","Systematic desensitization","Activity scheduling","Habit reversal","Problem-solving","Decision-making skills",
+    // ── Emotion & regulation
+    "Emotion identification","Emotion regulation skills","Distress tolerance","Mindfulness","Grounding techniques","Relaxation training","Breathing exercises","Progressive muscle relaxation","Urge surfing",
+    // ── Trauma & somatic
+    "Somatic work","EMDR processing","Trauma processing","Titration","Pendulation","Containment exercise","Safe place visualization",
+    // ── Modality-specific
+    "DBT skills","ACT defusion","Values clarification","Motivational interviewing","Narrative therapy","Externalizing the problem","Miracle question","Scaling questions","Chair work","Role play / modeling","Family systems work","Genogram work",
+    // ── Crisis & safety
+    "Crisis intervention","Safety planning","Lethal means counseling","Coping plan development",
+    // ── Grief & meaning
+    "Grief work","Meaning-making","Legacy work",
+  ],
   followup: ["1 week","2 weeks","Monthly","As needed","Referral made","Psychiatry consult","Higher level of care","Discharge planned"],
 };
 
@@ -221,8 +236,12 @@ function buildProseNote(note: Omit<NoteData, "id" | "savedAt">): {
   // ── P ──────────────────────────────────────────────────────────────────────
   const pParts: string[] = [];
   if (c("interventions").length) {
-    const intStr = joinList(c("interventions").map(v => v.toLowerCase()));
-    pParts.push(`This session included ${intStr}.`);
+    const ints = c("interventions");
+    if (ints.length === 1) {
+      pParts.push(`This session included ${ints[0].toLowerCase()}.`);
+    } else {
+      pParts.push(`Interventions utilized during this session included ${joinList(ints.map(v => v.toLowerCase()))}.`);
+    }
   }
   if (c("followup").length) {
     const fu = c("followup");
