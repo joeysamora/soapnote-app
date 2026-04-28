@@ -59,9 +59,9 @@ const CHIP_GROUPS = {
     "Psychoeducation","Cognitive restructuring","Thought challenging","Behavioral activation","Exposure","Systematic desensitization","Activity scheduling","Habit reversal","Problem-solving","Decision-making skills",
     "Emotion identification","Emotion regulation skills","Distress tolerance","Mindfulness","Grounding techniques","Relaxation training","Breathing exercises","Progressive muscle relaxation","Urge surfing",
     "Somatic work","EMDR processing","Trauma processing","Titration","Pendulation","Containment exercise","Safe place visualization",
-    "DBT skills","ACT defusion","Values clarification","Motivational interviewing","Narrative therapy","Externalizing the problem","Miracle question","Scaling questions","Chair work","Role play / modeling","Family systems work","Genogram work",
-    "Crisis intervention","Safety planning","Lethal means counseling","Coping plan development",
-    "Grief work","Meaning-making","Legacy work",
+    "DBT skills","Values clarification","Motivational interviewing","Narrative therapy","Externalizing the problem","Miracle question","Scaling questions","Chair work","Role play / modeling","Family systems work","Genogram work",
+    "Crisis intervention","Safety planning","Coping plan development",
+    "Grief work","Meaning-making",
   ],
   followup: ["1 week","2 weeks","Monthly","As needed","Referral made","Psychiatry consult","Higher level of care","Discharge planned"],
 };
