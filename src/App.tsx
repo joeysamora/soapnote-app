@@ -59,9 +59,9 @@ const CHIP_GROUPS = {
     "Psychoeducation","Cognitive restructuring","Thought challenging","Behavioral activation","Exposure","Systematic desensitization","Activity scheduling","Habit reversal","Problem-solving","Decision-making skills",
     "Emotion identification","Emotion regulation skills","Distress tolerance","Mindfulness","Grounding techniques","Relaxation training","Breathing exercises","Progressive muscle relaxation","Urge surfing",
     "Somatic work","EMDR processing","Trauma processing","Titration","Pendulation","Containment exercise","Safe place visualization",
-    "DBT skills","Values clarification","Motivational interviewing","Narrative therapy","Externalizing the problem","Miracle question","Scaling questions","Chair work","Role play / modeling","Family systems work","Genogram work",
-    "Crisis intervention","Safety planning","Coping plan development",
-    "Grief work","Meaning-making",
+    "DBT skills","ACT defusion","Values clarification","Motivational interviewing","Narrative therapy","Externalizing the problem","Miracle question","Scaling questions","Chair work","Role play / modeling","Family systems work","Genogram work",
+    "Crisis intervention","Safety planning","Lethal means counseling","Coping plan development",
+    "Grief work","Meaning-making","Legacy work",
   ],
   followup: ["1 week","2 weeks","Monthly","As needed","Referral made","Psychiatry consult","Higher level of care","Discharge planned"],
 };
@@ -77,6 +77,23 @@ const SECTION_COLORS = {
 
 const SESSION_TYPES = ["Individual (50 min)","Individual (90 min)","Couples therapy","Family therapy","Group therapy","Intake / Assessment","Crisis session","Telehealth"];
 const MODALITIES = ["CBT","DBT","Psychodynamic","ACT","EMDR","Person-centered","Trauma-focused CBT","Motivational Interviewing","Solution-focused","Eclectic / Integrative"];
+
+const DAILY_QUOTES = [
+  "Progress, not perfection.",
+  "Healing is not linear.",
+  "You are worthy of care.",
+  "Small steps still move you forward.",
+  "Growth begins at the edge of comfort.",
+  "Rest is part of the process.",
+  "You don't have to have it all figured out.",
+  "Every session is a step toward something better.",
+  "Courage is showing up, even on hard days.",
+  "Your story is still being written.",
+  "Feelings are visitors — let them pass.",
+  "Vulnerability is the birthplace of connection.",
+  "You are more than your diagnosis.",
+  "Change is possible. Always.",
+];
 
 const DEFAULT_NOTE = (): Omit<NoteData, "id" | "savedAt"> => {
   const now = new Date();
@@ -615,7 +632,6 @@ export default function App() {
   const [page, setPage] = useState<Page>("editor");
   const [note, setNote] = useState<Omit<NoteData, "id" | "savedAt">>(DEFAULT_NOTE());
   const [currentNoteId, setCurrentNoteId] = useState<string | null>(null);
-  
   const [expandedSections, setExpandedSections] = useState({ s: true, o: false, a: false, p: false });
   const [showPreview, setShowPreview] = useState(false);
   const [showDrawer, setShowDrawer] = useState(false);
@@ -623,6 +639,7 @@ export default function App() {
   const [notes, setNotesState] = useState<NoteData[]>(loadNotes);
   const [toast, setToast] = useState("");
   const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const dailyQuote = DAILY_QUOTES[Math.floor(Date.now() / 86400000) % DAILY_QUOTES.length];
 
   const showToast = useCallback((msg: string) => {
     setToast(msg);
@@ -634,7 +651,6 @@ export default function App() {
     if (autosaveTimer.current) clearTimeout(autosaveTimer.current);
     autosaveTimer.current = setTimeout(() => {
       localStorage.setItem("soap_draft", JSON.stringify(note));
-     
     }, 800);
   }, [note, settings.autosave]);
 
@@ -684,14 +700,12 @@ export default function App() {
     if (idx >= 0) all[idx] = record; else all.unshift(record);
     saveNotes(all);
     setNotesState([...all]);
-   
     showToast("Note saved!");
   };
 
   const newNote = () => {
     setCurrentNoteId(null);
     setNote(DEFAULT_NOTE());
-    
     setPage("editor");
   };
 
@@ -701,7 +715,6 @@ export default function App() {
     setCurrentNoteId(id);
     const { id: _id, savedAt, ...rest } = n;
     setNote({ ...rest, sessionTime: rest.sessionTime || "" });
-   
     setPage("editor");
   };
 
@@ -709,7 +722,6 @@ export default function App() {
     if (!window.confirm("Clear this note?")) return;
     setCurrentNoteId(null);
     setNote(DEFAULT_NOTE());
-   
   };
 
   const copyForGoogleDocs = () => {
@@ -762,7 +774,6 @@ export default function App() {
 
   // ── Bottom nav pages (mobile) ──
   const NAV_ITEMS: { p: Page; label: string; icon: React.ReactNode }[] = [
-
     {
       p: "editor", label: "Editor",
       icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
@@ -884,9 +895,10 @@ export default function App() {
             {/* ── EDITOR ── */}
             {page === "editor" && (
               <div>
-                {/* Header */}
-                <div style={{ marginBottom: "1.25rem" }}>
-                  
+                {/* Daily quote */}
+                <div style={{ background: "white", border: "1px solid #dde4e1", borderRadius: 10, padding: "12px 16px", marginBottom: "1.25rem", display: "flex", alignItems: "center", gap: 10 }}>
+                  <span style={{ fontSize: 18, flexShrink: 0 }}>🌿</span>
+                  <p style={{ fontSize: 13, color: "#3d6b5e", fontStyle: "italic", margin: 0, lineHeight: 1.6 }}>"{dailyQuote}"</p>
                 </div>
 
                 {/* Desktop action buttons */}
