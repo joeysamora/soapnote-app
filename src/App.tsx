@@ -615,7 +615,7 @@ export default function App() {
   const [page, setPage] = useState<Page>("editor");
   const [note, setNote] = useState<Omit<NoteData, "id" | "savedAt">>(DEFAULT_NOTE());
   const [currentNoteId, setCurrentNoteId] = useState<string | null>(null);
-  const [savedStatus, setSavedStatus] = useState("Draft · Not saved");
+  
   const [expandedSections, setExpandedSections] = useState({ s: true, o: false, a: false, p: false });
   const [showPreview, setShowPreview] = useState(false);
   const [showDrawer, setShowDrawer] = useState(false);
@@ -634,7 +634,7 @@ export default function App() {
     if (autosaveTimer.current) clearTimeout(autosaveTimer.current);
     autosaveTimer.current = setTimeout(() => {
       localStorage.setItem("soap_draft", JSON.stringify(note));
-      setSavedStatus("Draft · Autosaved");
+     
     }, 800);
   }, [note, settings.autosave]);
 
@@ -684,14 +684,14 @@ export default function App() {
     if (idx >= 0) all[idx] = record; else all.unshift(record);
     saveNotes(all);
     setNotesState([...all]);
-    setSavedStatus(`Saved · ${new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`);
+   
     showToast("Note saved!");
   };
 
   const newNote = () => {
     setCurrentNoteId(null);
     setNote(DEFAULT_NOTE());
-    setSavedStatus("Draft · Not saved");
+    
     setPage("editor");
   };
 
@@ -701,7 +701,7 @@ export default function App() {
     setCurrentNoteId(id);
     const { id: _id, savedAt, ...rest } = n;
     setNote({ ...rest, sessionTime: rest.sessionTime || "" });
-    setSavedStatus(`Saved · ${new Date(n.savedAt).toLocaleDateString()}`);
+   
     setPage("editor");
   };
 
@@ -709,7 +709,7 @@ export default function App() {
     if (!window.confirm("Clear this note?")) return;
     setCurrentNoteId(null);
     setNote(DEFAULT_NOTE());
-    setSavedStatus("Draft · Not saved");
+   
   };
 
   const copyForGoogleDocs = () => {
