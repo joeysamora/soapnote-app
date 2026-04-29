@@ -886,13 +886,7 @@ export default function App() {
               <div>
                 {/* Header */}
                 <div style={{ marginBottom: "1.25rem" }}>
-                  <input
-                    value={note.title}
-                    onChange={e => setNote(p => ({ ...p, title: e.target.value }))}
-                    placeholder="Untitled note"
-                    style={{ fontFamily: "DM Serif Display, Georgia, serif", fontSize: isMobile ? 22 : 28, border: "none", background: "transparent", color: "#1a1f1d", outline: "none", width: "100%", letterSpacing: "-0.02em", lineHeight: 1.2 }}
-                  />
-                  <div style={{ fontSize: 12, color: "#8a9491", marginTop: 4 }}>{savedStatus}</div>
+                  
                 </div>
 
                 {/* Desktop action buttons */}
