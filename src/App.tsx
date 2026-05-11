@@ -549,8 +549,7 @@ function MobileDrawer({ open, onClose, notes, currentNoteId, onOpen, onNew }: {
               border: `1px solid ${n.id === currentNoteId ? "#b0cdc4" : "transparent"}`,
               marginBottom: 2, WebkitTapHighlightColor: "transparent",
             }}>
-              <div style={{ fontSize: 13, fontWeight: 500, color: "#1a1f1d", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{n.title || "Untitled"}</div>
-              <div style={{ fontSize: 11, color: "#8a9491", marginTop: 2 }}>{n.clientId || "No client"} · {n.sessionDate ? fmtDate(n.sessionDate) : "—"}</div>
+              <div style={{ fontSize: 12, color: "#8a9491" }}>{n.clientId || "No client"} · {n.sessionDate ? fmtDate(n.sessionDate) : "—"}</div>
             </div>
           ))}
         </div>
@@ -880,7 +879,7 @@ export default function App() {
                   <div style={{ textAlign: "center", padding: "2rem 1rem", color: "#8a9491", fontSize: 12, lineHeight: 1.7 }}>No notes yet.<br />Create your first note above.</div>
                 ) : notes.slice(0, 10).map(n => (
                   <div key={n.id} onClick={() => openNote(n.id)} style={{ padding: "10px 12px", borderRadius: 6, cursor: "pointer", background: n.id === currentNoteId ? "#e8f0ed" : "transparent", border: `1px solid ${n.id === currentNoteId ? "#b0cdc4" : "transparent"}`, marginBottom: 2 }}>
-                    
+                    <div style={{ fontSize: 13, fontWeight: 500, color: "#1a1f1d", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{n.title || "Untitled"}</div>
                     <div style={{ fontSize: 11, color: "#8a9491", marginTop: 2 }}>{n.clientId || "No client"} · {n.sessionDate ? fmtDate(n.sessionDate) : "—"}</div>
                   </div>
                 ))}
@@ -926,8 +925,7 @@ export default function App() {
                 )}
 
                 {/* Meta grid — 2 cols on mobile, 5 on desktop */}
-                <div className="meta-grid-mobile" style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(5,1fr)", gap: isMobile ? 10 : 12, marginBottom: "1.5rem", padding: isMobile ? "1rem" : "1.25rem", background: "white", border: "1px solid #dde4e1", borderRadius: 10 }}>
-                  <MetaInput label="Client ID" value={note.clientId} onChange={v => setNote(p => ({ ...p, clientId: v }))} placeholder="e.g. J. Smith" />
+                <div className="meta-grid-mobile" style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4,1fr)", gap: isMobile ? 10 : 12, marginBottom: "1.5rem", padding: isMobile ? "1rem" : "1.25rem", background: "white", border: "1px solid #dde4e1", borderRadius: 10 }}>
                   <MetaInput label="Session date" value={note.sessionDate} onChange={v => setNote(p => ({ ...p, sessionDate: v }))} type="date" />
                   <TimePicker label="Session time" value={note.sessionTime} onChange={v => setNote(p => ({ ...p, sessionTime: v }))} />
                   <MetaSelect label="Session type" value={note.sessionType} onChange={v => setNote(p => ({ ...p, sessionType: v }))} options={SESSION_TYPES} />
@@ -1046,7 +1044,7 @@ export default function App() {
                         onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = "#b0cdc4"; }}
                         onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = "#dde4e1"; }}>
                         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, gap: 8 }}>
-                          
+                          <div style={{ fontSize: 14, fontWeight: 500, color: "#1a1f1d", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{n.title || n.clientId || "Untitled"}</div>
                           <div style={{ fontSize: 11, color: "#8a9491", flexShrink: 0 }}>{fmtDate(n.sessionDate)}</div>
                         </div>
                         <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
