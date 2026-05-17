@@ -804,9 +804,10 @@ export default function App() {
                 )}
 
                 {/* Meta grid */}
-                <div className="meta-grid" style={{ display:"grid", gridTemplateColumns:isMobile?"1fr 1fr":"repeat(4,1fr)", gap:isMobile?10:12, marginBottom:"1.5rem", padding:isMobile?"1rem":"1.25rem", background:"white", border:"1px solid #dde4e1", borderRadius:10 }}>
+                <div className="meta-grid" style={{ display:"grid", gridTemplateColumns:isMobile?"1fr 1fr":"repeat(5,1fr)", gap:isMobile?10:12, marginBottom:"1.5rem", padding:isMobile?"1rem":"1.25rem", background:"white", border:"1px solid #dde4e1", borderRadius:10 }}>
                   <MetaInput label="Client ID" value={note.clientId} onChange={v=>setNote(p=>({...p,clientId:v}))} placeholder="Client / chart ID" />
                   <MetaInput label="Session date" value={note.sessionDate} onChange={v=>setNote(p=>({...p,sessionDate:v}))} type="date" />
+                  <TimePicker label="Session time" value={note.sessionTime} onChange={v=>setNote(p=>({...p,sessionTime:v}))} />
                   <MetaSelect label="Session type" value={note.sessionType} onChange={v=>setNote(p=>({...p,sessionType:v}))} options={SESSION_TYPES} />
                   <MetaSelect label="Modality" value={note.modality} onChange={v=>setNote(p=>({...p,modality:v}))} options={MODALITIES} />
                 </div>
